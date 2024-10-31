@@ -1,5 +1,6 @@
 function(vcpkg_install_meson)
-    cmake_parse_arguments(PARSE_ARGV 0 arg "ADD_BIN_TO_PATH" "" "")
+    set(options ADD_BIN_TO_PATH DONT_FIX_PYTHON_HOME)
+    cmake_parse_arguments(PARSE_ARGV 0 arg "${options}" "" "")
 
     vcpkg_find_acquire_program(NINJA)
     unset(ENV{DESTDIR}) # installation directory was already specified with '--prefix' option
@@ -29,6 +30,16 @@ function(vcpkg_install_meson)
             else()
                 vcpkg_add_to_path(PREPEND "${CURRENT_INSTALLED_DIR}/bin")
             endif()
+        endif()
+        if(VCPKG_HOST_IS_WINDOWS AND NOT arg_DONT_FIX_PYTHON_HOME)
+            # currently on windows, a python installed by vcpkg is always be choosen, but other platform, the python of op system is used.
+            # so on windows, if there already installed a python, it will cause wrong sys.path, here use PYTHONHOME to told python use the correct sys.path
+            # vcpkg_find_acquire_program(PYTHON3) has been called by vcpkg_configure_meason before, so I think it has no side effect here, it is just used to collect the python path
+            vcpkg_find_acquire_program(PYTHON3)
+            file(REAL_PATH "${PYTHON3}" PYTHON3_REAL)
+            get_filename_component(PYTHON3_DIR "${PYTHON3_REAL}" DIRECTORY)
+            # another solution is to put a python._pyd file in the python installed dir, but this behavior can not be changed by the port developer.
+            set(ENV{PYTHONHOME} ${PYTHON3_DIR})
         endif()
         vcpkg_execute_required_process(
             COMMAND "${NINJA}" install -v

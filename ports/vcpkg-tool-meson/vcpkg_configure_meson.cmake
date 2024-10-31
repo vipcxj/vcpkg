@@ -434,6 +434,13 @@ function(vcpkg_configure_meson)
     vcpkg_find_acquire_program(PYTHON3)
     get_filename_component(PYTHON3_DIR "${PYTHON3}" DIRECTORY)
     vcpkg_add_to_path(PREPEND "${PYTHON3_DIR}")
+    if(VCPKG_HOST_IS_WINDOWS)
+        # currently on windows, a python installed by vcpkg is always be choosen, but other platform, the python of op system is used.
+        # so on windows, if there already installed a python, it will cause wrong sys.path, here use PYTHONHOME to told python use the correct sys.path
+        file(REAL_PATH "${PYTHON3}" PYTHON3_REAL)
+        get_filename_component(PYTHON3_DIR_REAL "${PYTHON3_REAL}" DIRECTORY)
+        set(ENV{PYTHONHOME} ${PYTHON3_DIR_REAL})
+    endif()
 
     set(buildtypes "")
     if(NOT DEFINED VCPKG_BUILD_TYPE OR VCPKG_BUILD_TYPE STREQUAL "debug")
